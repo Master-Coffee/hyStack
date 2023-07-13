@@ -12,8 +12,8 @@ services:
             - static_volume:/app/staticfiles  # Mounting static files volume
             - media_volume:/app/mediafiles  # Mounting media files volume
         # Exposing ports
-        ports:
-            - "8000:8000"  # Mapping port 8000 of the host to port 8000 in the container
+        expose:
+            - "8000" #Change 'port' variable  for 'expose' variable (expose is used to expose a port without publishing it to the host) 
         # Loading environment variables from files
         env_file:
             - ./.envs/.local/.django  # Loading environment variables for Django
@@ -54,6 +54,23 @@ services:
         # Connecting to the hy-api network
         networks:
             - hy-api
+
+
+    nginx:  # Defines the Nginx service
+        restart: always  # Specifies that the service should always be restarted if it stops
+        depends_on:
+            - api  # Indicates that the Nginx service depends on the 'api' service
+        volumes:
+            - static_volume:/app/staticfiles  # Mounts the 'static_volume' Docker volume to the '/app/staticfiles' directory in the Nginx container
+            - media_volume:/app/mediafiles  # Mounts the 'media_volume' Docker volume to the '/app/mediafiles' directory in the Nginx container
+        build:
+            context: ./docker/local/nginx  # Specifies the build context directory for the Nginx container
+            dockerfile: Dockerfile  # Specifies the Dockerfile to use for building the Nginx container
+        ports:
+            - "8080:80"  # Maps port 8080 on the host to port 80 in the Nginx container
+        networks:
+            - hy-api  # Connects the Nginx container to the 'hy-api' network
+
 
 networks:
     hy-api:
