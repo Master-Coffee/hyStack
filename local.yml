@@ -1,0 +1,66 @@
+version: "3.9"
+
+services:
+    api:
+        # Building the API service
+        build:
+            context: .
+            dockerfile: ./docker/local/django/Dockerfile
+        # Mounting volumes
+        volumes:
+            - ./Hy_api:/app:z  # Mounting the current directory to /app in the container
+            - static_volume:/app/staticfiles  # Mounting static files volume
+            - media_volume:/app/mediafiles  # Mounting media files volume
+        # Exposing ports
+        ports:
+            - "8000:8000"  # Mapping port 8000 of the host to port 8000 in the container
+        # Loading environment variables from files
+        env_file:
+            - ./.envs/.local/.django  # Loading environment variables for Django
+            - ./.envs/.local/.postgres  # Loading environment variables for PostgreSQL
+        # Defining dependencies
+        depends_on:
+            - postgres  # Depend on the postgres service
+            - mailhog  # Depend on the mailhog service
+        # Running the command
+        command: /start
+        # Connecting to the hy-api network
+        networks:
+            - hy-api
+
+    postgres:
+        # Building the PostgreSQL service
+        build:
+            context: .
+            dockerfile: ./docker/local/postgres/Dockerfile
+        # Mounting volumes
+        volumes:
+            - local_postgres_data:/var/lib/postgresql/data  # Mounting PostgreSQL data volume
+            - local_postgres_data_backups:/backups  # Mounting PostgreSQL backups volume
+        # Loading environment variables from file
+        env_file:
+            - ./.envs/.local/.postgres  # Loading environment variables for PostgreSQL
+        # Connecting to the hy-api network
+        networks:
+            - hy-api
+
+    mailhog:
+        # Using the mailhog image
+        image: mailhog/mailhog:v1.0.0
+        container_name: mailhog
+        # Exposing ports
+        ports:
+            - "8025:8025"  # Mapping port 8025 of the host to port 8025 in the container
+        # Connecting to the hy-api network
+        networks:
+            - hy-api
+
+networks:
+    hy-api:
+        driver: bridge  # Using the bridge network driver
+
+volumes:
+    static_volume:  # Creating the static files volume
+    media_volume:  # Creating the media files volume
+    local_postgres_data: {}  # Creating the PostgreSQL data volume
+    local_postgres_data_backups: {}  # Creating the PostgreSQL backups volume
