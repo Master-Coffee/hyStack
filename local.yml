@@ -22,11 +22,13 @@ services:
         depends_on:
             - postgres  # Depend on the postgres service
             - mailhog  # Depend on the mailhog service
+            - redis # Depend on the redis service
         # Running the command
         command: /start
         # Connecting to the hy-api network
         networks:
             - hy-api
+
 
     postgres:
         # Building the PostgreSQL service
@@ -44,6 +46,7 @@ services:
         networks:
             - hy-api
 
+
     mailhog:
         # Using the mailhog image
         image: mailhog/mailhog:v1.0.0
@@ -54,6 +57,51 @@ services:
         # Connecting to the hy-api network
         networks:
             - hy-api
+
+
+    redis:  # Defines the Redis service using the 'redis:7-alpine' Docker image
+        image: redis:7-alpine  # Specifies the Docker image to use for the Redis service
+        networks:
+            - hy-api  # Connects the Redis service to the 'hy-api' network
+
+
+    celery_worker:  # Defines the Celery worker service
+        build:
+            context: .  # Specifies the build context as the current directory
+            dockerfile: ./docker/local/django/Dockerfile  # Specifies the Dockerfile to use for building the Celery worker service
+        command: /start-celeryworker  # Sets the command to run when starting the Celery worker service
+        volumes:
+            - ./Hy_api:/app  # Mounts the Hy_api directory to the '/app' directory in the Celery worker container
+        env_file:
+            - ./.envs/.local/.django  # Loads environment variables from the '.django' file in the '.local' directory of the '.envs' directory
+            - ./.envs/.local/.postgres  # Loads environment variables from the '.postgres' file in the '.local' directory of the '.envs' directory
+        depends_on:
+            - redis  # Specifies that the Celery worker service depends on the Redis service
+            - postgres  # Specifies that the Celery worker service depends on the Postgres service
+            - mailhog  # Specifies that the Celery worker service depends on the MailHog service
+        networks:
+            - hy-api  # Connects the Celery worker service to the 'hy-api' network
+
+
+    flower:  # Defines the Celery Flower service
+        build:
+            context: .  # Specifies the build context as the current directory
+            dockerfile: ./docker/local/django/Dockerfile  # Specifies the Dockerfile to use for building the Celery Flower service
+        command: /start-flower  # Sets the command to run when starting the Celery Flower service
+        volumes:
+            - ./Hy_api:/app
+            - flower_data:/data  # Creates a named Docker volume 'flower_data' and mounts it to the '/data' directory in the Celery Flower container
+        env_file:
+            - ./.envs/.local/.django  # Loads environment variables from the '.django' file in the '.local' directory of the '.envs' directory
+            - ./.envs/.local/.postgres  # Loads environment variables from the '.postgres' file in the '.local' directory of the '.envs' directory
+        ports:
+            - "5555:5555"  # Maps port 5555 on the host to port 5555 in the Celery Flower container
+        depends_on:
+            - redis  # Specifies that the Celery Flower service depends on the Redis service
+            - postgres  # Specifies that the Celery Flower service depends on the Postgres service
+        networks:
+            - hy-api  # Connects the Celery Flower service to the 'hy-api' network
+
 
 
     nginx:  # Defines the Nginx service
@@ -81,3 +129,4 @@ volumes:
     media_volume:  # Creating the media files volume
     local_postgres_data: {}  # Creating the PostgreSQL data volume
     local_postgres_data_backups: {}  # Creating the PostgreSQL backups volume
+    flower_data: {} # Creating the flower_data backups volume

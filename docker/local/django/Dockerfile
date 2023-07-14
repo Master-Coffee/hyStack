@@ -57,6 +57,21 @@ COPY ./docker/local/django/start /start
 RUN sed -i 's/\r$//g' /start
 RUN chmod +x /start
 
+# Copies the 'start' script for Celery worker from the local directory to the '/start-celeryworker' path in the Docker container
+COPY ./docker/local/django/celery/worker/start /start-celeryworker  
+# Removes any carriage return characters (if present) from the 'start-celeryworker' script
+RUN sed -i 's/\r$//g' /start-celeryworker  
+# Gives executable permissions to the 'start-celeryworker' script
+RUN chmod +x /start-celeryworker  
+
+# Copies the 'start' script for Celery Flower from the local directory to the '/start-flower' path in the Docker container
+COPY ./docker/local/django/celery/flower/start /start-flower 
+# Removes any carriage return characters (if present) from the 'start-flower' script
+RUN sed -i 's/\r$//g' /start-flower  
+# Gives executable permissions to the 'start-flower' script
+RUN chmod +x /start-flower  
+
+
 # Copy the application code to the application home directory
 COPY . ${APP_HOME}
 
